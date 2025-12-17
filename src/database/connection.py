@@ -127,22 +127,27 @@ class DatabaseConnection:
         Returns:
             ノードデータのリスト
         """
-        query = "SELECT * FROM nodes"
+        query = "SELECT * FROM node_announcement"
         if limit:
             query += f" LIMIT {limit}"
         return self.execute_query(query)
     
-    def get_edges(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    def get_edges(self, limit: Optional[int] = None, active_only: bool = True) -> List[Dict[str, Any]]:
         """
         エッジ（チャネル）データを取得
         
         Args:
             limit: 取得件数の上限
+            active_only: Trueの場合、有効なチャネルのみ取得（rp_disabled = false）
         
         Returns:
             エッジデータのリスト
         """
-        query = "SELECT * FROM edges"
+        if active_only:
+            query = "SELECT * FROM channel_update WHERE rp_disabled = false"
+        else:
+            query = "SELECT * FROM channel_update"
+        
         if limit:
             query += f" LIMIT {limit}"
         return self.execute_query(query)
@@ -154,8 +159,8 @@ class DatabaseConnection:
         Returns:
             グラフ構造情報（ノード数、エッジ数など）
         """
-        node_count_query = "SELECT COUNT(*) as count FROM nodes"
-        edge_count_query = "SELECT COUNT(*) as count FROM edges"
+        node_count_query = "SELECT COUNT(*) as count FROM node_announcement"
+        edge_count_query = "SELECT COUNT(*) as count FROM channel_update WHERE rp_disabled = false"
         
         node_count = self.execute_query_single(node_count_query)
         edge_count = self.execute_query_single(edge_count_query)
@@ -170,4 +175,3 @@ class DatabaseConnection:
         if self.connection_pool:
             self.connection_pool.closeall()
             logger.info("データベース接続プールを閉じました")
-
