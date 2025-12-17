@@ -31,13 +31,20 @@ centrality:
 
 aws:
   sagemaker:
-    role: null  # IAMロール名（例: SageMakerExecutionRole）
-    bucket: null  # S3バケット名（例: lightning-network-analysis）
-    instance_type: ml.t3.medium
+    # IAMロール名（SageMaker Notebook Instance作成時に自動生成される）
+    # 例: AmazonSageMaker-ExecutionRole-20251217T182202
+    role: AmazonSageMaker-ExecutionRole-20251217T182202
+    bucket: null  # S3バケット名（例: lightning-network-analysis-<your-account-id>）
+    # インスタンスタイプの選択:
+    # - 小規模データ（<10,000ノード）: ml.t3.medium（推奨、コスト効率が良い）
+    # - 中規模データ（10,000-100,000ノード）: ml.t3.large または ml.m5.large
+    # - 大規模データ（>100,000ノード）: ml.m5.xlarge 以上
+    # - 計算集約的な前処理: ml.c5.xlarge（計算最適化インスタンス）
+    instance_type: ml.c5.xlarge  # または ml.t3.medium
     region: ap-northeast-1
   
   s3:
-    bucket: null  # データ保存用S3バケット
+    bucket: null  # データ保存用S3バケット（例: lightning-network-analysis-17351726356）
     prefix: lightning-network-analysis/
 
 ml:
@@ -74,4 +81,3 @@ logging:
   level: INFO
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   file: ./logs/analysis.log
-
