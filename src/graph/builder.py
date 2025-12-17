@@ -40,23 +40,33 @@ class GraphBuilder:
             graph = nx.Graph()
         
         try:
-            # ノードを取得して追加
+            # エッジを先に取得して、実際にチャネルを持つノードのみを取得
+            logger.info("エッジデータを取得しています...")
+            edges = self.db.get_edges(active_only=True, exclude_closed=True)  # 有効で閉じられていないチャネルのみ取得
+            logger.info(f"{len(edges)}個のエッジを取得しました")
+            
+            # エッジからノードIDを抽出
+            node_ids_from_edges = set()
+            for edge in edges:
+                source = edge.get('advertising_nodeid')
+                target = edge.get('connecting_nodeid')
+                if source:
+                    node_ids_from_edges.add(source)
+                if target:
+                    node_ids_from_edges.add(target)
+            
+            # アクティブなチャネルを持つノードのみを取得
             logger.info("ノードデータを取得しています...")
-            nodes = self.db.get_nodes()
+            nodes = self.db.get_nodes(active_channels_only=True)
             logger.info(f"{len(nodes)}個のノードを取得しました")
             
+            # エッジに含まれるノードのみを追加
             for node in nodes:
-                # node_announcementテーブルのnode_idカラムを使用
                 node_id = node.get('node_id')
-                if node_id:
+                if node_id and node_id in node_ids_from_edges:
                     # ノードの属性を追加
                     attrs = {k: v for k, v in node.items() if k != 'node_id'}
                     graph.add_node(node_id, **attrs)
-            
-            # エッジを取得して追加
-            logger.info("エッジデータを取得しています...")
-            edges = self.db.get_edges(active_only=True)  # 有効なチャネルのみ取得
-            logger.info(f"{len(edges)}個のエッジを取得しました")
             
             for edge in edges:
                 # channel_updateテーブルのadvertising_nodeidとconnecting_nodeidカラムを使用
