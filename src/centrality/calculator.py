@@ -69,12 +69,13 @@ class CentralityCalculator:
             weight=eigenvector_config.get('weight')
         )
     
-    def calculate_all(self, graph: nx.Graph) -> Dict[str, Dict]:
+    def calculate_all(self, graph: nx.Graph, transaction_size_msat: Optional[int] = None) -> Dict[str, Dict]:
         """
         すべての中心性指標を計算
         
         Args:
             graph: NetworkXグラフオブジェクト
+            transaction_size_msat: トランザクションサイズ（millisatoshi）。指定された場合、ルーティング手数料を重みとして計算。
         
         Returns:
             中心性指標名をキー、中心性スコア辞書を値とする辞書
@@ -83,36 +84,35 @@ class CentralityCalculator:
         
         try:
             logger.info("媒介中心性の計算を開始します...")
-            results['betweenness'] = self.betweenness.calculate(graph)
+            results['betweenness'] = self.betweenness.calculate(graph, transaction_size_msat=transaction_size_msat)
         except Exception as e:
             logger.error(f"媒介中心性の計算に失敗しました: {e}")
             results['betweenness'] = {}
         
         try:
             logger.info("近接中心性の計算を開始します...")
-            results['closeness'] = self.closeness.calculate(graph)
+            results['closeness'] = self.closeness.calculate(graph, transaction_size_msat=transaction_size_msat)
         except Exception as e:
             logger.error(f"近接中心性の計算に失敗しました: {e}")
             results['closeness'] = {}
         
         try:
             logger.info("近似中心性の計算を開始します...")
-            results['eigenvector'] = self.eigenvector.calculate(graph)
+            results['eigenvector'] = self.eigenvector.calculate(graph, transaction_size_msat=transaction_size_msat)
         except Exception as e:
             logger.error(f"近似中心性の計算に失敗しました: {e}")
             results['eigenvector'] = {}
         
         return results
     
-    def calculate_betweenness(self, graph: nx.Graph) -> Dict:
+    def calculate_betweenness(self, graph: nx.Graph, transaction_size_msat: Optional[int] = None) -> Dict:
         """媒介中心性のみを計算"""
-        return self.betweenness.calculate(graph)
+        return self.betweenness.calculate(graph, transaction_size_msat=transaction_size_msat)
     
-    def calculate_closeness(self, graph: nx.Graph) -> Dict:
+    def calculate_closeness(self, graph: nx.Graph, transaction_size_msat: Optional[int] = None) -> Dict:
         """近接中心性のみを計算"""
-        return self.closeness.calculate(graph)
+        return self.closeness.calculate(graph, transaction_size_msat=transaction_size_msat)
     
-    def calculate_eigenvector(self, graph: nx.Graph) -> Dict:
+    def calculate_eigenvector(self, graph: nx.Graph, transaction_size_msat: Optional[int] = None) -> Dict:
         """近似中心性のみを計算"""
-        return self.eigenvector.calculate(graph)
-
+        return self.eigenvector.calculate(graph, transaction_size_msat=transaction_size_msat)
