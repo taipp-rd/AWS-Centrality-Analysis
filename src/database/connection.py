@@ -117,50 +117,155 @@ class DatabaseConnection:
         results = self.execute_query(query, params)
         return results[0] if results else None
     
-    def get_nodes(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    def get_nodes(self, limit: Optional[int] = None, active_channels_only: bool = True) -> List[Dict[str, Any]]:
         """
         ノードデータを取得
         
         Args:
             limit: 取得件数の上限
+            active_channels_only: Trueの場合、アクティブなチャネルを持つノードのみ取得
         
         Returns:
             ノードデータのリスト
         """
-        query = "SELECT * FROM node_announcement"
+        if active_channels_only:
+            # アクティブなチャネルを持つノードのみ取得
+            query = """
+            SELECT DISTINCT na.*
+            FROM node_announcement na
+            INNER JOIN (
+                SELECT DISTINCT advertising_nodeid as node_id
+                FROM channel_update
+                WHERE rp_disabled = false
+                AND chan_id NOT IN (SELECT chan_id FROM closed_channel)
+                UNION
+                SELECT DISTINCT connecting_nodeid as node_id
+                FROM channel_update
+                WHERE rp_disabled = false
+                AND chan_id NOT IN (SELECT chan_id FROM closed_channel)
+            ) active_nodes ON na.node_id = active_nodes.node_id
+            """
+        else:
+            query = "SELECT * FROM node_announcement"
+        
         if limit:
             query += f" LIMIT {limit}"
+        
         return self.execute_query(query)
     
-    def get_edges(self, limit: Optional[int] = None, active_only: bool = True) -> List[Dict[str, Any]]:
+    def get_edges(self, limit: Optional[int] = None, active_only: bool = True, 
+                  exclude_closed: bool = True, days_back: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         エッジ（チャネル）データを取得
         
         Args:
             limit: 取得件数の上限
             active_only: Trueの場合、有効なチャネルのみ取得（rp_disabled = false）
+            exclude_closed: Trueの場合、閉じられたチャネルを除外
+            days_back: 指定した日数以内のデータのみ取得（Noneの場合は制限なし）
         
         Returns:
             エッジデータのリスト
         """
+        # 基本クエリ：有効なチャネルのみ
         if active_only:
-            query = "SELECT * FROM channel_update WHERE rp_disabled = false"
+            query = """
+            SELECT DISTINCT ON (chan_id) cu.*
+            FROM channel_update cu
+            WHERE cu.rp_disabled = false
+            """
         else:
-            query = "SELECT * FROM channel_update"
+            query = """
+            SELECT DISTINCT ON (chan_id) cu.*
+            FROM channel_update cu
+            WHERE 1=1
+            """
+        
+        # 閉じられたチャネルを除外
+        if exclude_closed:
+            query += """
+            AND cu.chan_id NOT IN (SELECT chan_id FROM closed_channel)
+            """
+        
+        # 最新の更新のみを取得（同じchan_idで最新のtimestampのもの）
+        query += """
+        ORDER BY cu.chan_id, cu.timestamp DESC
+        """
+        
+        # 日数制限がある場合
+        if days_back:
+            query = f"""
+            SELECT DISTINCT ON (chan_id) cu.*
+            FROM channel_update cu
+            WHERE cu.rp_disabled = false
+            AND cu.timestamp >= EXTRACT(EPOCH FROM NOW() - INTERVAL '{days_back} days')::bigint
+            """
+            if exclude_closed:
+                query += """
+                AND cu.chan_id NOT IN (SELECT chan_id FROM closed_channel)
+                """
+            query += """
+            ORDER BY cu.chan_id, cu.timestamp DESC
+            """
         
         if limit:
             query += f" LIMIT {limit}"
+        
         return self.execute_query(query)
     
-    def get_graph_structure(self) -> Dict[str, Any]:
+    def get_graph_structure(self, exclude_closed: bool = True) -> Dict[str, Any]:
         """
         グラフ構造の基本情報を取得
+        
+        Args:
+            exclude_closed: Trueの場合、閉じられたチャネルを除外
         
         Returns:
             グラフ構造情報（ノード数、エッジ数など）
         """
-        node_count_query = "SELECT COUNT(*) as count FROM node_announcement"
-        edge_count_query = "SELECT COUNT(*) as count FROM channel_update WHERE rp_disabled = false"
+        # アクティブなチャネルを持つノード数を取得
+        node_count_query = """
+        SELECT COUNT(DISTINCT na.node_id) as count
+        FROM node_announcement na
+        INNER JOIN (
+            SELECT DISTINCT advertising_nodeid as node_id
+            FROM channel_update
+            WHERE rp_disabled = false
+        """
+        if exclude_closed:
+            node_count_query += """
+            AND chan_id NOT IN (SELECT chan_id FROM closed_channel)
+            """
+        node_count_query += """
+            UNION
+            SELECT DISTINCT connecting_nodeid as node_id
+            FROM channel_update
+            WHERE rp_disabled = false
+        """
+        if exclude_closed:
+            node_count_query += """
+            AND chan_id NOT IN (SELECT chan_id FROM closed_channel)
+            """
+        node_count_query += """
+        ) active_nodes ON na.node_id = active_nodes.node_id
+        """
+        
+        # アクティブなチャネル数（重複を除いた最新の更新のみ）
+        edge_count_query = """
+        SELECT COUNT(DISTINCT chan_id) as count
+        FROM (
+            SELECT DISTINCT ON (chan_id) chan_id
+            FROM channel_update
+            WHERE rp_disabled = false
+        """
+        if exclude_closed:
+            edge_count_query += """
+            AND chan_id NOT IN (SELECT chan_id FROM closed_channel)
+            """
+        edge_count_query += """
+            ORDER BY chan_id, timestamp DESC
+        ) active_channels
+        """
         
         node_count = self.execute_query_single(node_count_query)
         edge_count = self.execute_query_single(edge_count_query)
