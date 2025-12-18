@@ -136,4 +136,3 @@ jupyter lab
 - NetworkX Documentation: https://networkx.org/
 - Deep Graph Library (DGL): https://www.dgl.ai/
 - AWS SageMaker Documentation: https://docs.aws.amazon.com/sagemaker/
-- 中心性に関する論文は`papers/`ディレクトリに保存されています
