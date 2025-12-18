@@ -75,30 +75,35 @@ class CentralityCalculator:
         
         Args:
             graph: NetworkXグラフオブジェクト
-            transaction_size_msat: トランザクションサイズ（millisatoshi）。指定された場合、ルーティング手数料を重みとして計算。
+            transaction_size_msat: トランザクションサイズ（millisatoshi）。このパラメータは互換性のために残していますが、
+                                   実際にはグラフ構築時に既にweight属性として設定されているため使用されません。
         
         Returns:
             中心性指標名をキー、中心性スコア辞書を値とする辞書
+        
+        Note:
+            グラフ構築時に既にweight属性が設定されているため、各中心性計算クラスは自動的に
+            重み付きグラフとして処理します。transaction_size_msatは互換性のためのみ保持されています。
         """
         results = {}
         
         try:
             logger.info("媒介中心性の計算を開始します...")
-            results['betweenness'] = self.betweenness.calculate(graph, transaction_size_msat=transaction_size_msat)
+            results['betweenness'] = self.betweenness.calculate(graph)
         except Exception as e:
             logger.error(f"媒介中心性の計算に失敗しました: {e}")
             results['betweenness'] = {}
         
         try:
             logger.info("近接中心性の計算を開始します...")
-            results['closeness'] = self.closeness.calculate(graph, transaction_size_msat=transaction_size_msat)
+            results['closeness'] = self.closeness.calculate(graph)
         except Exception as e:
             logger.error(f"近接中心性の計算に失敗しました: {e}")
             results['closeness'] = {}
         
         try:
             logger.info("近似中心性の計算を開始します...")
-            results['eigenvector'] = self.eigenvector.calculate(graph, transaction_size_msat=transaction_size_msat)
+            results['eigenvector'] = self.eigenvector.calculate(graph)
         except Exception as e:
             logger.error(f"近似中心性の計算に失敗しました: {e}")
             results['eigenvector'] = {}
@@ -106,13 +111,31 @@ class CentralityCalculator:
         return results
     
     def calculate_betweenness(self, graph: nx.Graph, transaction_size_msat: Optional[int] = None) -> Dict:
-        """媒介中心性のみを計算"""
-        return self.betweenness.calculate(graph, transaction_size_msat=transaction_size_msat)
+        """
+        媒介中心性のみを計算
+        
+        Args:
+            graph: NetworkXグラフオブジェクト
+            transaction_size_msat: 互換性のためのパラメータ（使用されません）
+        """
+        return self.betweenness.calculate(graph)
     
     def calculate_closeness(self, graph: nx.Graph, transaction_size_msat: Optional[int] = None) -> Dict:
-        """近接中心性のみを計算"""
-        return self.closeness.calculate(graph, transaction_size_msat=transaction_size_msat)
+        """
+        近接中心性のみを計算
+        
+        Args:
+            graph: NetworkXグラフオブジェクト
+            transaction_size_msat: 互換性のためのパラメータ（使用されません）
+        """
+        return self.closeness.calculate(graph)
     
     def calculate_eigenvector(self, graph: nx.Graph, transaction_size_msat: Optional[int] = None) -> Dict:
-        """近似中心性のみを計算"""
-        return self.eigenvector.calculate(graph, transaction_size_msat=transaction_size_msat)
+        """
+        近似中心性のみを計算
+        
+        Args:
+            graph: NetworkXグラフオブジェクト
+            transaction_size_msat: 互換性のためのパラメータ（使用されません）
+        """
+        return self.eigenvector.calculate(graph)
