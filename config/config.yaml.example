@@ -2,13 +2,13 @@
 # このファイルを config.yaml にコピーして、実際の値を設定してください
 
 database:
-  host: lightning-graph-db.c7kw0quwamx3.ap-northeast-1.rds.amazonaws.com
-  port: 19688
-  dbname: graph
-  user: mikura
-  password: "#w!zLVhwNzzz4!r"  # 実際のパスワードに置き換えてください
-  sslmode: prefer
-  connect_timeout: 10
+  host:
+  port: 
+  dbname: 
+  user: 
+  password:  # 実際のパスワードに置き換えてください
+  sslmode: 
+  connect_timeout: 
 
 centrality:
   # 媒介中心性 (Betweenness Centrality)
