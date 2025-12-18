@@ -130,17 +130,6 @@ jupyter lab
 - 大規模なグラフでは計算に時間がかかる場合があります
 - AWS SageMakerを使用する場合は、適切なIAM権限が必要です
 
-## ライセンス
-
-このプロジェクトは内部使用を目的としています。
-
-## ドキュメント
-
-詳細なドキュメントは以下の通りです：
-
-- [`docs/AWS_SAGEMAKER_GUIDE.md`](docs/AWS_SAGEMAKER_GUIDE.md): AWS SageMakerコンソールでの実行ガイド（GNN含む）
-- [`docs/GNN_CENTRALITY_ANALYSIS_GUIDE.md`](docs/GNN_CENTRALITY_ANALYSIS_GUIDE.md): グラフニューラルネットワークによる中心性分析の詳細ガイド
-- [`docs/CENTRALITY_THEORY.md`](docs/CENTRALITY_THEORY.md): 中心性指標の理論的背景
 
 ## 参考文献
 
